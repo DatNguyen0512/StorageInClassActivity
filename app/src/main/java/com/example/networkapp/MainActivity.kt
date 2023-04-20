@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.button).setOnClickListener{
             val intent = Intent(
                 Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                Uri.parse("package:$packageName"))
+                Uri.parse("package:${packageName}"))
             startActivity(intent)
 
         }

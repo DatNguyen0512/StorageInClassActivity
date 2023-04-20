@@ -1,24 +1,21 @@
 package com.example.networkapp
 
-import android.content.SharedPreferences
-import androidx.appcompat.app.AppCompatActivity
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
-import com.android.volley.Request
+import androidx.appcompat.app.AppCompatActivity
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonObjectRequest
-import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
 import java.io.*
-import java.util.prefs.AbstractPreferences
-
-private const val AUTO_SAVE_KEY = "auto_save"
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,24 +26,13 @@ class MainActivity : AppCompatActivity() {
     lateinit var showButton: Button
     lateinit var comicImageView: ImageView
 
-    private lateinit var file: File
-    private var InternalFile = "my_file"
-    private var autoSave = false
-    private lateinit var preferences: SharedPreferences
 
-
-
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         requestQueue = Volley.newRequestQueue(this)
-
-        preferences = getPreferences(MODE_PRIVATE)
-        file = File(filesDir, InternalFile)
-
-        autoSave = preferences.getBoolean(AUTO_SAVE_KEY, false)
-
 
         titleTextView = findViewById<TextView>(R.id.comicTitleTextView)
         descriptionTextView = findViewById<TextView>(R.id.comicDescriptionTextView)
@@ -54,43 +40,46 @@ class MainActivity : AppCompatActivity() {
         showButton = findViewById<Button>(R.id.showComicButton)
         comicImageView = findViewById<ImageView>(R.id.comicImageView)
 
-        if ( file.exists()){
-            try {
-                val br = BufferedReader(FileReader(file))
-                val text = StringBuilder()
-                var line: String?
-                while (br.readLine().also{ line = it }!= null){
-                    text.append(line)
-                }
-                br.close()
-                showComic(JSONObject(text.toString()))
 
-            }catch (e: IOException){
-                e.printStackTrace()
-            }
-        }
         showButton.setOnClickListener {
 
             downloadComic(numberEditText.text.toString())
         }
 
+
+        if(intent?.action == Intent.ACTION_VIEW){
+            intent.data?.path?.run{
+                downloadComic(split("/")[1])
+            }
+        }
+
+        findViewById<Button>(R.id.button).setOnClickListener{
+            val intent = Intent(
+                Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
+                Uri.parse("package:$packageName"))
+            startActivity(intent)
+
+        }
+
+    }
+
+    private fun loadComic() {
+        TODO("Not yet implemented")
     }
 
     private fun downloadComic (comicId: String) {
         val url = "https://xkcd.com/$comicId/info.0.json"
         requestQueue.add (
             JsonObjectRequest(url, {
-                try {
-                    val outputStream = FileOutputStream(file)
-                    outputStream.write(it.toString().toByteArray())
-                    outputStream.close()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                saveComic(it)
                 showComic(it)}, {
 
             })
         )
+    }
+
+    private fun saveComic(it: JSONObject?) {
+            showComic(JSONObject())
     }
 
     private fun showComic (comicObject: JSONObject) {
